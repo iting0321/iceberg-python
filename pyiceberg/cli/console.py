@@ -35,7 +35,7 @@ from pyiceberg.exceptions import NoSuchNamespaceError, NoSuchPropertyException, 
 from pyiceberg.table import TableProperties
 from pyiceberg.table.refs import SnapshotRef
 from pyiceberg.utils.properties import property_as_int
-
+from pyiceberg.exceptions import CatalogNotConfiguredError
 
 def catch_exception() -> Callable:  # type: ignore
     def decorator(func: Callable) -> Callable:  # type: ignore
@@ -87,7 +87,7 @@ def run(
 
     try:
         ctx.obj["catalog"] = load_catalog(catalog, **properties)
-    except Exception as e:
+    except CatalogNotConfiguredError as e:
         ctx.obj["output"].exception(e)
         ctx.exit(1)
 

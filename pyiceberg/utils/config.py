@@ -22,6 +22,8 @@ import strictyaml
 
 from pyiceberg.typedef import UTF8, FrozenDict, RecursiveDict
 from pyiceberg.types import strtobool
+from pyiceberg.exceptions import CatalogNotConfiguredError
+
 
 PYICEBERG = "pyiceberg_"
 DEFAULT = "default"
@@ -146,7 +148,7 @@ class Config:
             return default_catalog_name
         return DEFAULT
 
-    def get_catalog_config(self, catalog_name: str) -> Optional[RecursiveDict]:
+    def get_catalog_config(self, catalog_name: str)-> Optional[RecursiveDict]:
         if CATALOG in self.config:
             catalog_name_lower = catalog_name.lower()
             catalogs = self.config[CATALOG]
@@ -156,6 +158,9 @@ class Config:
                 catalog_conf = catalogs[catalog_name_lower]
                 assert isinstance(catalog_conf, dict), f"Configuration path catalogs.{catalog_name_lower} needs to be an object"
                 return catalog_conf
+            else:
+                raise CatalogNotConfiguredError("Invalid command usage: The --catalog flag must be provided before the command.\n\nUsage: \n"
+            "    pyiceberg --catalog <catalog_name> [COMMAND] \n")
         return None
 
     def get_int(self, key: str) -> Optional[int]:

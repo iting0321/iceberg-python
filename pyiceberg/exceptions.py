@@ -122,3 +122,6 @@ class CommitStateUnknownException(RESTError):
 
 class WaitingForLockException(Exception):
     """Need to wait for a lock, try again."""
+
+class CatalogNotConfiguredError(Exception):
+    """Catalog is not configured."""

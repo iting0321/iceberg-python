@@ -23,6 +23,7 @@ from strictyaml import as_document
 
 from pyiceberg.typedef import UTF8, RecursiveDict
 from pyiceberg.utils.config import Config, _lowercase_dictionary_keys, merge_config
+from pyiceberg.exceptions import CatalogNotConfiguredError
 
 EXAMPLE_ENV = {"PYICEBERG_CATALOG__PRODUCTION__URI": "https://service.io/api"}
 
@@ -65,7 +66,20 @@ def test_from_configuration_files(tmp_path_factory: pytest.TempPathFactory) -> N
     os.environ["PYICEBERG_HOME"] = config_path
     assert Config().get_catalog_config("production") == {"uri": "https://service.io/api"}
 
-
+def test_catalog_not_found() -> None:
+    """Test the behavior when a catalog is not found in the configuration."""
+    
+    # Prepare a mock configuration where the catalog is missing
+    config = Config()
+    config.config = {
+        "catalog": {}  # Simulating an empty catalog configuration
+    }
+    
+    # Try to fetch a catalog that does not exist
+    with pytest.raises(CatalogNotConfiguredError):
+        config = Config()
+        config.get_catalog_config("non_existent_catalog")
+        
 def test_lowercase_dictionary_keys() -> None:
     uppercase_keys = {"UPPER": {"NESTED_UPPER": {"YES"}}}
     expected = {"upper": {"nested_upper": {"YES"}}}
@@ -175,3 +189,4 @@ def test_config_lookup_order(
     assert (
         result["catalog"]["default"]["uri"] if result else None  # type: ignore
     ) == expected_result, f"Unexpected configuration result. Expected: {expected_result}, Actual: {result}"
+

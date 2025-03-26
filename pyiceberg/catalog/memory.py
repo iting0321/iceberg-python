@@ -17,6 +17,8 @@
 
 from pyiceberg.catalog.sql import SqlCatalog
 
+from pydantic import field_validator
+
 
 class InMemoryCatalog(SqlCatalog):
     """
@@ -25,8 +27,15 @@ class InMemoryCatalog(SqlCatalog):
     This is useful for test, demo, and playground but not in production as it does not support concurrent access.
     """
 
-    def __init__(self, name: str, warehouse: str = "file:///tmp/iceberg/warehouse", **kwargs: str) -> None:
-        self._warehouse_location = warehouse
-        if "uri" not in kwargs:
-            kwargs["uri"] = "sqlite:///:memory:"
-        super().__init__(name=name, warehouse=warehouse, **kwargs)
+    name: str
+    warehouse: str = "file:///tmp/iceberg/warehouse"
+    uri: str = "sqlite:///:memory:"
+    _warehouse_location: str = "file:///tmp/iceberg/warehouse"
+
+    class ConfigDict:
+        arbitrary_types_allowed = True
+
+    @field_validator("properties", mode="before")
+    def validate_properties(cls, value):
+        # Skip validation for in-memory catalog
+        return value

@@ -854,31 +854,33 @@ class CommitTableResponse(IcebergBaseModel):
     metadata_location: str = Field(alias="metadata-location")
 
 
-class Table:
+class Table(IcebergBaseModel):
     """An Iceberg table."""
 
-    _identifier: Identifier = Field()
+    model_config = {"arbitrary_types_allowed": True, "frozen": True}
+
+    identifier: Identifier = Field()
     metadata: TableMetadata
     metadata_location: str = Field()
     io: FileIO
-    catalog: Catalog
-    config: Dict[str, str]
+    catalog: Catalog  # Use a forward reference for Catalog
+    config: Dict[str, str] = EMPTY_DICT
 
-    def __init__(
-        self,
-        identifier: Identifier,
-        metadata: TableMetadata,
-        metadata_location: str,
-        io: FileIO,
-        catalog: Catalog,
-        config: Dict[str, str] = EMPTY_DICT,
-    ) -> None:
-        self._identifier = identifier
-        self.metadata = metadata
-        self.metadata_location = metadata_location
-        self.io = io
-        self.catalog = catalog
-        self.config = config
+    # def __init__(
+    #     self,
+    #     identifier: Identifier,
+    #     metadata: TableMetadata,
+    #     metadata_location: str,
+    #     io: FileIO,
+    #     catalog: Catalog,
+    #     config: Dict[str, str] = EMPTY_DICT,
+    # ) -> None:
+    #     self.identifier = identifier
+    #     self.metadata = metadata
+    #     self.metadata_location = metadata_location
+    #     self.io = io
+    #     self.catalog = catalog
+    #     self.config = config
 
     def transaction(self) -> Transaction:
         """Create a new transaction object to first stage the changes, and then commit them to the catalog.
@@ -903,7 +905,7 @@ class Table:
         Returns:
             An updated instance of the same Iceberg table
         """
-        fresh = self.catalog.load_table(self._identifier)
+        fresh = self.catalog.load_table(self.identifier)
         self.metadata = fresh.metadata
         self.io = fresh.io
         self.metadata_location = fresh.metadata_location
@@ -915,7 +917,7 @@ class Table:
         Returns:
             An Identifier tuple of the table name
         """
-        return self._identifier
+        return self.identifier
 
     def scan(
         self,
@@ -1333,7 +1335,7 @@ class Table:
 
     def __repr__(self) -> str:
         """Return the string representation of the Table class."""
-        table_name = self.catalog.table_name_from(self._identifier)
+        table_name = self.catalog.table_name_from(self.identifier)
         schema_str = ",\n  ".join(str(column) for column in self.schema().columns if self.schema())
         partition_str = f"partition by: [{', '.join(field.name for field in self.spec().fields if self.spec())}]"
         sort_order_str = f"sort order: [{', '.join(str(field) for field in self.sort_order().fields if self.sort_order())}]"
@@ -1360,7 +1362,6 @@ class Table:
         import polars as pl
 
         return pl.scan_iceberg(self)
-
 
 class StaticTable(Table):
     """Load a table directly from a metadata file (i.e., without using a catalog)."""

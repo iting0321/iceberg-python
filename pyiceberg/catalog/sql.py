@@ -71,7 +71,7 @@ from pyiceberg.table.update import (
 )
 from pyiceberg.typedef import EMPTY_DICT, Identifier, Properties
 from pyiceberg.types import strtobool
-
+from pydantic import BaseModel, Field, field_validator
 if TYPE_CHECKING:
     import pyarrow as pa
 
@@ -116,12 +116,19 @@ class SqlCatalog(MetastoreCatalog):
     The `SqlCatalog` has a different convention where a `TableIdentifier` requires a `Namespace`.
     """
 
-    def __init__(self, name: str, **properties: str):
-        super().__init__(name, **properties)
+    name: str
+    properties: dict[str, str] = Field(default_factory=dict)
+    engine: Optional[object] = None
 
-        if not (uri_prop := self.properties.get("uri")):
+    @field_validator("properties", mode="before")
+    def validate_properties(cls, value):
+        if "uri" not in value:
             raise NoSuchPropertyException("SQL connection URI is required")
+        return value
 
+    def model_post_init(self, __context__):
+        print(f"model_post_init: {self.properties}")
+        uri_prop = self.properties["uri"]
         echo_str = str(self.properties.get("echo", DEFAULT_ECHO_VALUE)).lower()
         echo = strtobool(echo_str) if echo_str != "debug" else "debug"
         pool_pre_ping = strtobool(self.properties.get("pool_pre_ping", DEFAULT_POOL_PRE_PING_VALUE))
@@ -495,6 +502,7 @@ class SqlCatalog(MetastoreCatalog):
         )
 
     def _namespace_exists(self, identifier: Union[str, Identifier]) -> bool:
+        print("namespace_exists")
         namespace_tuple = Catalog.identifier_to_tuple(identifier)
         namespace = Catalog.namespace_to_string(namespace_tuple, NoSuchNamespaceError)
         namespace_starts_with = namespace.replace("!", "!!").replace("_", "!_").replace("%", "!%") + ".%"

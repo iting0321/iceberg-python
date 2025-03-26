@@ -70,6 +70,7 @@ from pyiceberg.typedef import (
     Identifier,
     Properties,
     RecursiveDict,
+    IcebergBaseModel,
 )
 from pyiceberg.utils.config import Config, merge_config
 from pyiceberg.utils.properties import property_as_bool
@@ -167,7 +168,7 @@ def load_in_memory(name: str, conf: Properties) -> Catalog:
     try:
         from pyiceberg.catalog.memory import InMemoryCatalog
 
-        return InMemoryCatalog(name, **conf)
+        return InMemoryCatalog(name=name, properties=conf)
     except ImportError as exc:
         raise NotInstalledError("SQLAlchemy support not installed: pip install 'pyiceberg[sql-sqlite]'") from exc
 
@@ -321,7 +322,7 @@ class PropertiesUpdateSummary:
     missing: List[str]
 
 
-class Catalog(ABC):
+class Catalog(ABC, IcebergBaseModel):
     """Base Catalog for table operations like - create, drop, load, list and others.
 
     The catalog table APIs accept a table identifier, which is fully classified table name. The identifier can be a string or
@@ -338,9 +339,9 @@ class Catalog(ABC):
     name: str
     properties: Properties
 
-    def __init__(self, name: str, **properties: str):
-        self.name = name
-        self.properties = properties
+    # def __init__(self, name: str, **properties: str):
+    #     self.name = name
+    #     self.properties = properties
 
     @abstractmethod
     def create_table(
@@ -778,8 +779,8 @@ class Catalog(ABC):
 
 
 class MetastoreCatalog(Catalog, ABC):
-    def __init__(self, name: str, **properties: str):
-        super().__init__(name, **properties)
+    name: str
+    properties: Properties
 
     def create_table_transaction(
         self,

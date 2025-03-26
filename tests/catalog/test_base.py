@@ -50,10 +50,12 @@ from pyiceberg.transforms import IdentityTransform
 from pyiceberg.typedef import EMPTY_DICT, Properties
 from pyiceberg.types import IntegerType, LongType, NestedField
 
+from unittest.mock import MagicMock
+import json
 
 @pytest.fixture
 def catalog(tmp_path: PosixPath) -> InMemoryCatalog:
-    return InMemoryCatalog("test.in_memory.catalog", **{WAREHOUSE: tmp_path.absolute().as_posix(), "test.key": "test.value"})
+    return InMemoryCatalog(name="test.in_memory.catalog", properties={WAREHOUSE: tmp_path.absolute().as_posix(), "test.key": "test.value"})
 
 
 TEST_TABLE_IDENTIFIER = ("com", "organization", "department", "my_table")
@@ -74,7 +76,44 @@ DROP_NOT_EXISTING_NAMESPACE_ERROR = "Namespace does not exist: \\('com', 'organi
 NO_SUCH_NAMESPACE_ERROR = "Namespace com.organization.department does not exists"
 NAMESPACE_NOT_EMPTY_ERROR = "Namespace com.organization.department is not empty"
 
+# @pytest.fixture
+# def mock_catalog(mocker):
+#     """Mock the catalog instance and `load_table` behavior."""
+#     mock_catalog = mocker.MagicMock()
+    
+#     # Mock Table metadata (assuming Table has a `metadata` attribute)
+#     fake_table = MagicMock(spec=Table)
+#     fake_table.metadata.model_dump_json.return_value = json.dumps({
+#         "table_name": "default.taxi_dataset",
+#         "schema": {"id": "int", "name": "string"},
+#     })
+    
+#     # Define behavior for valid and invalid tables
+#     mock_catalog.load_table.side_effect = lambda identifier: fake_table if identifier == "default.taxi_dataset" else NoSuchTableError()
+    
+#     return mock_catalog
 
+# def test_load_table_valid(mock_catalog):
+#     """Test loading a valid table and serializing its metadata."""
+#     tbl = mock_catalog.load_table("default.taxi_dataset")
+    
+#     # Ensure the return type is a mock Table
+#     assert isinstance(tbl, Table)
+    
+#     # Ensure metadata can be serialized
+#     json_metadata = tbl.metadata.model_dump_json()
+#     assert isinstance(json_metadata, str)
+    
+#     # Ensure JSON is valid and contains expected data
+#     parsed_metadata = json.loads(json_metadata)
+#     assert parsed_metadata["table_name"] == "default.taxi_dataset"
+#     assert "schema" in parsed_metadata
+
+# def test_load_table_invalid(mock_catalog):
+#     """Test loading a non-existent table raises NoSuchTableError."""
+#     with pytest.raises(NoSuchTableError):
+#         mock_catalog.load_table("default.non_existent_table")
+        
 def given_catalog_has_a_table(
     catalog: InMemoryCatalog,
     properties: Properties = EMPTY_DICT,
